@@ -76,3 +76,9 @@ class TestPostsCreation(TestCase):
         )
 
         self.check_urls(post, post_text)
+
+    def test_404(self):
+        response = self.client.get(
+            "404/"
+        )
+        self.assertEqual(response.status_code, 404)

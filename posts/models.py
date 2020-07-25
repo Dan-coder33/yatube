@@ -29,3 +29,7 @@ class Post(models.Model):
         null=True,
         on_delete=models.SET_NULL
     )
+    image = models.ImageField(
+        upload_to='posts/',
+        blank=True, null=True
+    )
