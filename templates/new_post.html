@@ -6,7 +6,11 @@
 <div class="row justify-content-center">
     <div class="col-md-8 p-5">
         <div class="card">
-            <div class="card-header">Новая запись</div>
+            {% if edit == False %}
+                <div class="card-header">Новая запись</div>
+            {% elif edit == True %}
+                <div class="card-header">Редактирование записи</div>
+            {% endif %}
             <div class="card-body">
 
                 <form method="post">
@@ -29,7 +33,11 @@
 
                     <div class="col-md-6 offset-md-4">
                             <button type="submit" class="btn btn-primary">
-                                Добавить новую запись
+                                {% if edit == False %}
+                                    Добавить новую запись
+                                {% elif edit == True %}
+                                    Редактировать запись
+                                {% endif %}
                             </button>
                     </div>
                 </form>

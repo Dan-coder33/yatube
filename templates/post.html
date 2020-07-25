@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<main role="main" class="container">
+    <div class="row">
+        {% include 'includes/main_profile.html' %}
+        <div class="col-md-9">
+            {% include 'includes/post_buttons.html' %}
+        </div>
+    </div>
+</main>
+{% endblock %}
