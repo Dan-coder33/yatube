@@ -14,7 +14,7 @@ class TestPostsCreation(TestCase):
             username="sarah", email="connor.s@skynet.com", password="12345"
         )
         self.client_auth.force_login(self.user)
-        Post.objects.create(text="text", author=self.user)
+        Post.objects.create(text="text", author=self.user)  # noqa
 
     def test_profile(self):
         response = self.client.get(
@@ -26,38 +26,38 @@ class TestPostsCreation(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_new_post(self):
-        posts_number_before = Post.objects.all().count()
+        posts_number_before = Post.objects.all().count()  # noqa
         response = self.client_auth.post(
             reverse("new_post"),
             data={"text": "test"}
         )
         self.assertEqual(response.status_code, 302)
-        posts_number_after = Post.objects.all().count()
+        posts_number_after = Post.objects.all().count()  # noqa
         self.assertEqual(posts_number_before + 1, posts_number_after)
-        self.assertTrue(Post.objects.filter(text="test").exists())
+        self.assertTrue(Post.objects.filter(text="test").exists())  # noqa
 
     def test_new_post_cancel(self):
-        posts_number_before = Post.objects.all().count()
+        posts_number_before = Post.objects.all().count()  # noqa
         self.client.post(reverse("new_post"), data={"text": "teeest"})
-        posts_number_after = Post.objects.all().count()
+        posts_number_after = Post.objects.all().count()  # noqa
         self.assertEqual(posts_number_before, posts_number_after)
-        self.assertFalse(Post.objects.filter(text="teeeest").exists())
+        self.assertFalse(Post.objects.filter(text="teeeest").exists())  # noqa
 
     def check_urls(self, post, post_text):
         for url in (
-            reverse("index"),
-            reverse("profile", kwargs={"username": self.user.username}),
-            reverse("post", kwargs={
-                "username": self.user.username,
-                "post_id": post.id,
-            })
+                reverse("index"),
+                reverse("profile", kwargs={"username": self.user.username}),
+                reverse("post", kwargs={
+                    "username": self.user.username,
+                    "post_id": post.id,
+                })
         ):
             response = self.client.get(url)
             self.assertContains(response, post_text)
 
     def test_post_pg(self):
         post_text = "text"
-        post = Post.objects.create(text=post_text, author=self.user)
+        post = Post.objects.create(text=post_text, author=self.user)  # noqa
         self.check_urls(post, post_text)
 
     def test_post_pg_edit(self):
@@ -77,8 +77,35 @@ class TestPostsCreation(TestCase):
 
         self.check_urls(post, post_text)
 
+
+class TestErrors(TestCase):
     def test_404(self):
         response = self.client.get(
             "404/"
         )
         self.assertEqual(response.status_code, 404)
+
+
+class TestImg(TestCase):
+    def setUp(self):
+        self.client_auth = Client()
+        self.user = User.objects.create_user(
+            username="sarah", email="connor.s@skynet.com", password="12345"
+        )
+        self.client_auth.force_login(self.user)
+        Post.objects.create(text="text", author=self.user)  # noqa
+
+    def test_post_img(self):
+        with open(
+                "media/posts/test_picture.png",
+                "rb"
+        ) as img:
+            response = self.client_auth.post(
+                reverse("new_post"),
+                {
+                    "text": "check picture",
+                    "image": img,
+                },
+                follow=True
+            )
+            self.assertEqual(response.status_code, 200)
