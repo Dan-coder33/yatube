@@ -93,19 +93,23 @@ class TestImg(TestCase):
             username="sarah", email="connor.s@skynet.com", password="12345"
         )
         self.client_auth.force_login(self.user)
-        Post.objects.create(text="text", author=self.user)  # noqa
 
     def test_post_img(self):
-        with open(
-                "media/posts/test_picture.png",
-                "rb"
-        ) as img:
-            response = self.client_auth.post(
-                reverse("new_post"),
-                {
-                    "text": "check picture",
-                    "image": img,
-                },
-                follow=True
+        post = Post.objects.create( # noqa
+            text="test_picture",
+            author=self.user,
+            image="media/posts/test_picture.png",
+        )
+        response = self.client_auth.get(
+            reverse(
+                "post",
+                kwargs={
+                    "username": self.user.username,
+                    "post_id": post.id,
+                }
             )
-            self.assertEqual(response.status_code, 200)
+        )
+        self.assertContains(
+            response,
+            "img"
+        )
