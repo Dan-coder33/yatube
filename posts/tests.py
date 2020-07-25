@@ -113,3 +113,20 @@ class TestImg(TestCase):
             response,
             "img"
         )
+
+    def test_all_contains_img(self):
+        post = Post.objects.create(  # noqa
+            text="test_picture_2",
+            author=self.user,
+            image="media/posts/test_picture.png",
+        )
+
+        for url in (
+                reverse("index"),
+                reverse("profile", kwargs={"username": self.user.username}),
+        ):
+            response = self.client.get(url)
+            self.assertContains(
+                response,
+                "img"
+            )
