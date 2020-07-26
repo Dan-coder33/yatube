@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 
-from .forms import NewPostForm
+from .forms import NewPostForm, NewCommentForm
 from .models import Post, Group
 
 
@@ -72,6 +72,8 @@ def post_view(request, username, post_id):
     post = get_object_or_404(Post, author__username=username, id=post_id)
     post_list = post.author.posts.all()
     count = post_list.count()
+    form = NewCommentForm(instance=None)
+    items = post.comments.order_by("-created").all()
     return render(
         request,
         "post.html",
@@ -81,6 +83,8 @@ def post_view(request, username, post_id):
             "post": post,
             "count": count,
             "author": post.author,
+            "form": form,
+            "items": items,
         }
     )
 
@@ -107,8 +111,17 @@ def post_edit(request, username, post_id):
     )
 
 
-def add_comment(request):
-    pass
+@login_required
+def add_comment(request, username, post_id):
+    post = get_object_or_404(Post, pk=post_id, author__username=username)
+    form = NewCommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.post = post
+        comment.author = request.user
+        comment.save()
+        return redirect("post", username=username, post_id=post_id)
+    return render(request, "post.html", {"form": form})
 
 
 def page_not_found(request, exception):
