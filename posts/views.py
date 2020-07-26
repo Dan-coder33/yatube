@@ -107,6 +107,10 @@ def post_edit(request, username, post_id):
     )
 
 
+def add_comment(request):
+    pass
+
+
 def page_not_found(request, exception):
     return render(
         request,

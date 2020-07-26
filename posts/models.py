@@ -30,6 +30,24 @@ class Post(models.Model):
         on_delete=models.SET_NULL
     )
     image = models.ImageField(
-        upload_to='posts/',
+        upload_to="posts/",
         blank=True, null=True
+    )
+
+
+class Comment(models.Model):
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        related_name="comments"
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="comments"
+    )
+    text = models.TextField()
+    created = models.DateTimeField(
+        "date published",
+        auto_now_add=True
     )
