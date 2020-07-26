@@ -95,38 +95,65 @@ class TestImg(TestCase):
         self.client_auth.force_login(self.user)
 
     def test_post_img(self):
-        post = Post.objects.create( # noqa
-            text="test_picture",
-            author=self.user,
-            image="media/posts/test_picture.png",
-        )
-        response = self.client_auth.get(
+        with open("media/posts/test_picture.png", "rb") as img:
+            post = self.client_auth.post(
+                reverse("new_post"),
+                data={
+                    "author": self.user,
+                    "text": "post with image",
+                    "image": img
+                },
+                follow=True
+            )
+
+        self.assertEqual(post.status_code, 200)
+        self.assertEqual(Post.objects.count(), 1) # noqa
+
+    def test_all_contains_img(self):
+        with open("media/posts/test_picture.png", "rb") as img:
+            self.client_auth.post(
+                reverse("new_post"),
+                data={
+                    "author": self.user,
+                    "text": "post with image 2",
+                    "image": img
+                },
+                follow=True
+            )
+
+        post = Post.objects.first() # noqa
+        urls = [
+            reverse("index"),
             reverse(
                 "post",
                 kwargs={
-                    "username": self.user.username,
+                    "username": post.author,
                     "post_id": post.id,
                 }
-            )
-        )
-        self.assertContains(
-            response,
-            "img"
-        )
+            ),
+            reverse(
+                "profile",
+                kwargs={
+                    "username": post.author,
+                }
+            ),
+        ]
 
-    def test_all_contains_img(self):
-        post = Post.objects.create(  # noqa
-            text="test_picture_2",
-            author=self.user,
-            image="media/posts/test_picture.png",
-        )
+        for url in urls:
+            response = self.client_auth.get(url)
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "img")
 
-        for url in (
-                reverse("index"),
-                reverse("profile", kwargs={"username": self.user.username}),
-        ):
-            response = self.client.get(url)
-            self.assertContains(
-                response,
-                "img"
-            )
+    def test_img_format(self):
+        with open("media/posts/file.txt", "rb") as img:
+            post = self.client_auth.post(
+                reverse('new_post'),
+                data={
+                    "author": self.user,
+                    "text": "post with image 3",
+                    "image": img
+                },
+                follow=True)
+
+        self.assertEqual(post.status_code, 200)
+        self.assertEqual(Post.objects.count(), 1) # noqa
