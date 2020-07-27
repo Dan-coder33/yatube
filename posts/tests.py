@@ -166,7 +166,12 @@ class TestCache(TestCase):
             username="sarah", email="connor.s@skynet.com", password="12345"
         )
         self.client_auth.force_login(self.user)
-        Post.objects.create(text="text", author=self.user)  # noqa
 
     def test_cache_index(self):
-        pass
+        Post.objects.create(text="check 1", author=self.user)  # noqa
+        response = self.client_auth.get(reverse("index"))
+        self.assertContains(response, "check 1")
+
+        Post.objects.create(text="check 2", author=self.user)  # noqa
+        response = self.client_auth.get(reverse("index"))
+        self.assertNotContains(response, "check 2")
