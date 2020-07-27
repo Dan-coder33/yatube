@@ -157,3 +157,16 @@ class TestImg(TestCase):
 
         self.assertEqual(post.status_code, 200)
         self.assertEqual(Post.objects.count(), 1) # noqa
+
+
+class TestCache(TestCase):
+    def setUp(self):
+        self.client_auth = Client()
+        self.user = User.objects.create_user(
+            username="sarah", email="connor.s@skynet.com", password="12345"
+        )
+        self.client_auth.force_login(self.user)
+        Post.objects.create(text="text", author=self.user)  # noqa
+
+    def test_cache_index(self):
+        pass
