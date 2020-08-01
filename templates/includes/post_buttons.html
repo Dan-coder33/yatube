@@ -5,7 +5,7 @@
     {% endthumbnail %}
     <div class="card-body">
         <p class="card-text">
-            <a href="{% url 'profile' username=username %}"><strong class="d-block text-gray-dark">{{ username }}</strong></a>
+            <a href="{% url "profile" username=username %}"><strong class="d-block text-gray-dark">{{ username }}</strong></a>
             {{ post.text|linebreaksbr }}
         </p>
         <div class="d-flex justify-content-between align-items-center">

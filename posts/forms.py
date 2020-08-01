@@ -19,7 +19,7 @@ class NewPostForm(ModelForm):
         }
 
 
-class NewCommentForm(ModelForm):
+class CommentForm(ModelForm):
     text = forms.CharField(widget=forms.Textarea)
 
     class Meta:

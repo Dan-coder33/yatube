@@ -27,7 +27,8 @@ class Post(models.Model):
     group = models.ForeignKey(
         Group, blank=True,
         null=True,
-        on_delete=models.SET_NULL
+        on_delete=models.SET_NULL,
+        related_name="posts"
     )
     image = models.ImageField(
         upload_to="posts/",
@@ -51,3 +52,17 @@ class Comment(models.Model):
         "date published",
         auto_now_add=True
     )
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="follower"
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="following"
+    )
+    unique_together = ["user", "author"]

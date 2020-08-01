@@ -1,9 +1,11 @@
+from PIL import Image
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.test import TestCase, Client
 from django.urls import reverse
+from six import BytesIO
 
-from posts.models import Post
+from posts.models import Post, Follow
 
 
 class TestPostsCreation(TestCase):
@@ -16,7 +18,7 @@ class TestPostsCreation(TestCase):
         self.client_auth.force_login(self.user)
         Post.objects.create(text="text", author=self.user)  # noqa
 
-    def test_profile(self):
+    def test_open_profile(self):
         response = self.client.get(
             reverse(
                 "profile",
@@ -25,7 +27,7 @@ class TestPostsCreation(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    def test_new_post(self):
+    def test_auth_client_can_create_new_post(self):
         posts_number_before = Post.objects.all().count()  # noqa
         response = self.client_auth.post(
             reverse("new_post"),
@@ -36,7 +38,7 @@ class TestPostsCreation(TestCase):
         self.assertEqual(posts_number_before + 1, posts_number_after)
         self.assertTrue(Post.objects.filter(text="test").exists())  # noqa
 
-    def test_new_post_cancel(self):
+    def test_no_auth_client_can_create_new_post(self):
         posts_number_before = Post.objects.all().count()  # noqa
         self.client.post(reverse("new_post"), data={"text": "teeest"})
         posts_number_after = Post.objects.all().count()  # noqa
@@ -55,12 +57,12 @@ class TestPostsCreation(TestCase):
             response = self.client.get(url)
             self.assertContains(response, post_text)
 
-    def test_post_pg(self):
+    def test_new_post_on_pages(self):
         post_text = "text"
         post = Post.objects.create(text=post_text, author=self.user)  # noqa
         self.check_urls(post, post_text)
 
-    def test_post_pg_edit(self):
+    def test_edit_post_on_pages(self):
         post_text = "edit_text"
         post = get_object_or_404(Post, text="text")
         post_id = post.id
@@ -94,34 +96,34 @@ class TestImg(TestCase):
         )
         self.client_auth.force_login(self.user)
 
-    def test_post_img(self):
-        with open("media/posts/test_picture.png", "rb") as img:
-            post = self.client_auth.post(
-                reverse("new_post"),
-                data={
-                    "author": self.user,
-                    "text": "post with image",
-                    "image": img
-                },
-                follow=True
-            )
+    def test_auth_client_create_new_post_with_img(self):
+        img = self.create_test_image_file()
+        post = self.client_auth.post(
+            reverse("new_post"),
+            data={
+                "author": self.user,
+                "text": "post with image",
+                "image": img
+            },
+            follow=True
+        )
 
         self.assertEqual(post.status_code, 200)
-        self.assertEqual(Post.objects.count(), 1) # noqa
+        self.assertEqual(Post.objects.count(), 1)  # noqa
 
-    def test_all_contains_img(self):
-        with open("media/posts/test_picture.png", "rb") as img:
-            self.client_auth.post(
-                reverse("new_post"),
-                data={
-                    "author": self.user,
-                    "text": "post with image 2",
-                    "image": img
-                },
-                follow=True
-            )
+    def test_new_post_with_img_on_pages(self):
+        img = self.create_test_image_file()
+        self.client_auth.post(
+            reverse("new_post"),
+            data={
+                "author": self.user,
+                "text": "post with image 2",
+                "image": img
+            },
+            follow=True
+        )
 
-        post = Post.objects.first() # noqa
+        post = Post.objects.first()  # noqa
         urls = [
             reverse("index"),
             reverse(
@@ -144,19 +146,29 @@ class TestImg(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, "img")
 
-    def test_img_format(self):
-        with open("media/posts/file.txt", "rb") as img:
-            post = self.client_auth.post(
-                reverse('new_post'),
-                data={
-                    "author": self.user,
-                    "text": "post with image 3",
-                    "image": img
-                },
-                follow=True)
+    def test_new_post_with_wrong_img_format(self):
+        img = self.create_test_image_file()
+        post = self.client_auth.post(
+            reverse("new_post"),
+            data={
+                "author": self.user,
+                "text": "post with image 3",
+                "image": img
+            },
+            follow=True
+        )
 
         self.assertEqual(post.status_code, 200)
-        self.assertEqual(Post.objects.count(), 1) # noqa
+        self.assertEqual(Post.objects.count(), 1)  # noqa
+
+    @staticmethod
+    def create_test_image_file():
+        file = BytesIO()
+        image = Image.new('RGBA', size=(100, 100), color=(155, 0, 0))
+        image.save(file, 'png')
+        file.name = 'test.png'
+        file.seek(0)
+        return file
 
 
 class TestCache(TestCase):
@@ -175,3 +187,133 @@ class TestCache(TestCase):
         Post.objects.create(text="check 2", author=self.user)  # noqa
         response = self.client_auth.get(reverse("index"))
         self.assertNotContains(response, "check 2")
+
+
+class TestCommentsFollows(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.client_auth_follower = Client()
+        self.client_auth_following = Client()
+        self.user_follower = User.objects.create_user(
+            username="follower", email="connor.s@skynet.com", password="12345678"
+        )
+        self.user_following = User.objects.create_user(
+            username="following", email="blablabla@mail.ru", password="123456789"
+        )
+        self.user = User.objects.create_user(
+            username="user", email="a@mail.ru", password="12345"
+        )
+        self.client_auth_follower.force_login(self.user_follower)
+        self.client_auth_following.force_login(self.user_following)
+
+    def test_user_follow(self):
+        before = Follow.objects.all().count()
+        self.client_auth_follower.get(
+            reverse(
+                "profile_follow",
+                kwargs={
+                    "username": self.user_following.username,
+                },
+            )
+        )
+        after = Follow.objects.all().count()
+
+        self.assertEqual(before + 1, after)
+
+    def test_user_unfollow(self):
+        self.client_auth_follower.get(
+            reverse(
+                "profile_follow",
+                kwargs={
+                    "username": self.user_following.username,
+                },
+            )
+        )
+        before = Follow.objects.all().count()
+        self.client_auth_follower.get(
+            reverse(
+                "profile_unfollow",
+                kwargs={
+                    "username": self.user_following.username,
+                },
+            )
+        )
+        after = Follow.objects.all().count()
+
+        self.assertEqual(before - 1, after)
+
+    def test_client_leave_comment(self):
+        post = Post.objects.create(
+            text="Text",
+            author=self.user_following
+        )
+        self.client_auth_follower.post(
+            reverse(
+                "add_comment",
+                kwargs={
+                    "username": self.user_following.username,
+                    "post_id": post.id,
+                },
+            ),
+            data={
+                "text": "Comment",
+            }
+        )
+        response = self.client.get(
+            reverse(
+                "post",
+                kwargs={
+                    "username": self.user_following.username,
+                    "post_id": post.id,
+                }
+            )
+        )
+        self.assertContains(response, "Comment")
+
+        self.client.post(
+            reverse(
+                "add_comment",
+                kwargs={
+                    "username": self.user_following.username,
+                    "post_id": post.id,
+                },
+            ),
+            data={
+                "text": "Comment 2",
+            }
+        )
+        response = self.client.get(
+            reverse(
+                "post",
+                kwargs={
+                    "username": self.user_following.username,
+                    "post_id": post.id,
+                }
+            )
+        )
+        self.assertNotContains(response, "Comment 2")
+
+    def test_subscribed_users_receive_authors_posts(self):
+        self.client_auth_follower.get(
+            reverse(
+                "profile_follow",
+                kwargs={
+                    "username": self.user_following.username,
+                },
+            )
+        )
+        Post.objects.create(
+            text="Text123",
+            author=self.user_following
+        )
+        response = self.client_auth_follower.get(
+            reverse("follow_index")
+        )
+        self.assertContains(response, "Text123")
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse("follow_index")
+        )
+        self.assertNotContains(response, "Text123")
