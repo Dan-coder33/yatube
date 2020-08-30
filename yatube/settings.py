@@ -33,6 +33,7 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     'posts',
     'users',
+    'rest_framework.authtoken',
     'sorl.thumbnail',
     'django.contrib.sites',
     'django.contrib.flatpages',
@@ -84,6 +85,16 @@ WSGI_APPLICATION = 'yatube.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ]
+}
 
 DATABASES = {
     'default': {
