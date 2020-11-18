@@ -22,11 +22,24 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'ivbbq@34t386=6lh#c(zzls7m*t5md)9-loti!_e=c-ar&+!9b'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "*",
 ]
+
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = 'index'
+LOGOUT_URL = 'logout'
+LOGOUT_REDIRECT_URL = 'index'
+
+SOCIAL_AUTH_FACEBOOK_KEY = '3913530632012893'
+SOCIAL_AUTH_FACEBOOK_SECRET = '18e5530b5aa523fa3efe51149814447f'
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email']
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {
+    'locale': 'ru_RU',
+    'fields': 'id, name, email, age_range'
+}
 
 # Application definition
 
@@ -43,7 +56,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    "debug_toolbar",
+    'debug_toolbar',
+    'social_django',
+    'sslserver',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'social_core.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 MIDDLEWARE = [
@@ -148,10 +168,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-LOGIN_URL = "/auth/login/"
-LOGIN_REDIRECT_URL = "index"
-# LOGOUT_REDIRECT_URL = "index"
 
 #  подключаем движок filebased.EmailBackend
 EMAIL_BACKEND = "django.core.mail.backends.filebased.EmailBackend"
